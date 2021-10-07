@@ -1,0 +1,204 @@
+---
+title: "Electricity_Production"
+author: "LEI WANG"
+date: "`r format(Sys.Date(),'%Y-%m-%d')`"
+output: html_document
+---
+
+# Data clean
+## Read data
+Reading two data, one is the amount of the country Electricity production from renewable sources named "namount.csv". And the other one is the proportion (% in total) of country Electricity production from renewable sources named "rapi.csv".
+```{r}
+#read data
+prodat<-read.csv("rapi.csv")
+amountdat<-read.csv("namount.csv")
+
+#show data (only 5 column)
+head(prodat[,1:5])
+head(amountdat[,1:5])
+
+#save the dimension
+mydim1<-dim(prodat)
+mydim2<-dim(amountdat)
+```
+And I also shows the dim of each data, both of them is `r mydim1` and `r mydim2`.
+
+## Dropping useless columns
+I am interested in how the country Electricity production from renewable sources developed in each country and each country group (by income and geography). Thus, I do not need Indicator.Code and Indicator.Name. I will drop these column to make the dataframe more organized.
+
+
+
+```{r}
+#drop useless columns
+prodat<-prodat[,!names(prodat) %in% c("Indicator.Code","Indicator.Name")]
+amountdat<-amountdat[,!names(amountdat) %in% c("Indicator.Code","Indicator.Name")]
+#show data (only 5 column)
+head(prodat[,1:5])
+head(amountdat[,1:5])
+#save dimension
+mydim3<-dim(prodat)
+mydim4<-dim(amountdat)
+
+```
+After dropping useless columns, the dim became `r mydim3` and `r mydim4`
+
+## Creating tables for different country groups
+Before discovering all the trends, I wish to use High income, mid income, low income counrtries as an example. Firstly, I need to combine this two data together to get a relationship between proportion and total amount, since only look at proportion or total amount can miss some useful information.
+
+### Creating a table for HIGH INCOME
+```{r}
+#create new dataframe for HIgh income
+#create year list
+Years<-seq(1960,2015,1)
+
+#create proportion list
+myProportion<-list()
+for (i in seq(3,mydim3[2])){
+  myProportion[i-2]<-as.numeric(prodat[prodat$Country.Code=="HIC",i])
+}
+temp1<-unlist(myProportion)
+myProportion<-list(temp1)
+
+#create amount list
+myAmount<-list()
+for (i in seq(3,mydim4[2])){
+  myAmount[i-2]<-as.numeric(amountdat[amountdat$Country.Code=="HIC",i])
+}
+temp1<-unlist(myAmount)
+myAmount<-list(temp1)
+
+#create new dataframe
+mydataHIC<-data.frame(Years,myProportion,myAmount)
+names(mydataHIC)<-c("Years","Proportion(%)","Amount(kWh)")
+
+#show the table
+knitr::kable(head(mydataHIC), "simple")
+```
+
+### Creating a table for MID INCOME
+
+```{r}
+#create new dataframe for MID INCOME
+#create year list
+Years<-seq(1960,2015,1)
+
+#create proportion list
+myProportion<-list()
+for (i in seq(3,mydim3[2])){
+  myProportion[i-2]<-as.numeric(prodat[prodat$Country.Code=="MIC",i])
+}
+temp1<-unlist(myProportion)
+myProportion<-list(temp1)
+
+#create amount list
+myAmount<-list()
+for (i in seq(3,mydim4[2])){
+  myAmount[i-2]<-as.numeric(amountdat[amountdat$Country.Code=="MIC",i])
+}
+temp1<-unlist(myAmount)
+myAmount<-list(temp1)
+
+#create new dataframe
+mydataMIC<-data.frame(Years,myProportion,myAmount)
+names(mydataMIC)<-c("Years","Proportion(%)","Amount(kWh)")
+
+#show the table
+knitr::kable(head(mydataMIC), "simple")
+```
+
+### Creating a table for LOW INCOME
+```{r}
+#create new dataframe for LOW INCOME
+#create year list
+Years<-seq(1960,2015,1)
+
+#create proportion list
+myProportion<-list()
+for (i in seq(3,mydim3[2])){
+  myProportion[i-2]<-as.numeric(prodat[prodat$Country.Code=="LIC",i])
+}
+temp1<-unlist(myProportion)
+myProportion<-list(temp1)
+
+#create amount list
+myAmount<-list()
+for (i in seq(3,mydim4[2])){
+  myAmount[i-2]<-as.numeric(amountdat[amountdat$Country.Code=="LIC",i])
+}
+temp1<-unlist(myAmount)
+myAmount<-list(temp1)
+
+#create new dataframe
+mydataLIC<-data.frame(Years,myProportion,myAmount)
+names(mydataLIC)<-c("Years","Proportion(%)","Amount(kWh)")
+
+#show the table
+knitr::kable(head(mydataLIC), "simple")
+```
+
+We can see there are some missing data in MIC and LIC, we just compare the data when both MIC, LIC and HIC have. At this moment, these missing value is not a problem.
+
+Let's add a column to show the group, and combine all the data together.
+
+## Combine all three groups together
+```{r}
+# let each data have a new column to show their group
+mydataHIC$type<-1
+mydataMIC$type<-2
+mydataLIC$type<-3
+
+# combine all data
+mydata<-rbind(mydataHIC,mydataMIC,mydataLIC)
+
+# show the table of my final data
+knitr::kable(head(mydata), "simple")
+```
+
+
+
+# Analysis
+## Plot
+```{r}
+# A null plot of Amount
+plot(mydata$Years, mydata$`Amount(kWh)`, type="n", main="The Electricity production from renewable sources",xlab="Years",ylab="Amount(kWh)")
+
+# Set groups
+HIC <- mydata[mydata$type == 1,]
+MIC <- mydata[mydata$type == 2,]
+LIC <- mydata[mydata$type == 3,]
+
+#plot points
+points(HIC$Years, HIC$`Amount(kWh)`, pch = 0)
+points(MIC$Years, MIC$`Amount(kWh)`, pch = 1)
+points(LIC$Years, LIC$`Amount(kWh)`, pch = 2)
+legend("topleft", inset=0.05, c("HIC","MIC","LIC"),
+        pch = c(0,1,2))
+
+```
+```{r}
+# A null plot of Amount
+plot(mydata$Years, mydata$`Proportion(%)`, type="n", main="The propotion of Electricity production from renewable sources",xlab="Years",ylab="Proportion(%)")
+
+# Set groups
+HIC <- mydata[mydata$type == 1,]
+MIC <- mydata[mydata$type == 2,]
+LIC <- mydata[mydata$type == 3,]
+
+#plot points
+points(HIC$Years, HIC$`Proportion(%)`, pch = 0)
+points(MIC$Years, MIC$`Proportion(%)`, pch = 1)
+points(LIC$Years, LIC$`Proportion(%)`, pch = 2)
+legend("topleft", inset=0.05, c("HIC","MIC","LIC"),
+        pch = c(0,1,2))
+```
+
+## Result
+We can see high income countries used renewable engergy much more than middle and low income countries. And we can see the gap of proportion and amount between high income and middle income countries is not such large at the begining (from 1970-1980).
+
+However, around 1990, the high income country have a rapid increse, and at this moment, the middle income countries are behind. And in the recent years (2000-2015), high income group have a very soon development in renewable engery. Although middle income group also get a rapid increase around 2010, it is still far behind high income group.
+
+And the low income group started slowly and far behind high income group, which means low income group still heavily relys on traditional resources engery.
+
+
+
+
