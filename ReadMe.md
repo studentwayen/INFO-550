@@ -53,6 +53,3 @@ You can use following code to open the report:
 open ./Rmd/WLreport.html
 ```
 
-# INFO550-HW4
-# INFO550-HW4
-# INFO550-HW4
